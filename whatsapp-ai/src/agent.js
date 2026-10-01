@@ -17,10 +17,21 @@ function loadKnowledge() {
     .join('\n\n');
 }
 
-function buildSystemPrompt(contact) {
-  const { name, company, businessHours, timezone } = config.bot;
+// Parte fixa (persona + base de conhecimento): igual em toda mensagem, por isso o Claude guarda em cache
+function buildSystemPrompt() {
+  // Relido a cada mensagem: editou a pasta knowledge/ ou o persona.md, vale na hora, sem reiniciar.
+  return fs
+    .readFileSync(path.join(ROOT, 'prompts', 'persona.md'), 'utf8')
+    .replaceAll('{{BOT_NAME}}', config.bot.name)
+    .replaceAll('{{COMPANY}}', config.bot.company)
+    .replace('{{KNOWLEDGE}}', loadKnowledge() || '(vazia)');
+}
+
+// Parte que muda a cada mensagem
+function buildContext(contact) {
+  const { businessHours, timezone } = config.bot;
   const now = new Date();
-  const context = [
+  return [
     `Data/hora: ${now.toLocaleString('pt-BR', { timeZone: timezone })} (use "${greetingFor(timezone, now)}" se for cumprimentar).`,
     isWithinBusinessHours(businessHours, timezone, now)
       ? 'A equipe humana está disponível agora.'
@@ -31,14 +42,6 @@ function buildSystemPrompt(contact) {
   ]
     .filter(Boolean)
     .join('\n');
-
-  // Relido a cada mensagem: editou a pasta knowledge/ ou o persona.md, vale na hora, sem reiniciar.
-  return fs
-    .readFileSync(path.join(ROOT, 'prompts', 'persona.md'), 'utf8')
-    .replaceAll('{{BOT_NAME}}', name)
-    .replaceAll('{{COMPANY}}', company)
-    .replace('{{CONTEXT}}', context)
-    .replace('{{KNOWLEDGE}}', loadKnowledge() || '(vazia)');
 }
 
 // Extrai as tags de controle que a IA inclui e devolve o texto limpo
@@ -91,17 +94,17 @@ export function createAgent(transport) {
     try {
       const contact = getContact(contactId);
       const userText = buf.texts.join('\n');
-      const messages = [
-        { role: 'system', content: buildSystemPrompt(contact) },
-        ...contact.history.map(({ role, content }) => ({ role, content })),
-        { role: 'user', content: userText },
-      ];
+      const input = {
+        system: buildSystemPrompt(),
+        context: buildContext(contact),
+        history: [...contact.history.map(({ role, content }) => ({ role, content })), { role: 'user', content: userText }],
+      };
       addMessage(contactId, 'user', userText);
 
       await transport.typing?.(buf.lastMessageId);
       let raw;
       try {
-        raw = await chat(messages);
+        raw = await chat(input);
       } catch (err) {
         console.error('[agent]', err.message);
         raw = 'Opa, deu uma instabilidade aqui do meu lado 😅 || Já chamei alguém da equipe pra te responder, tá? [HUMANO]';

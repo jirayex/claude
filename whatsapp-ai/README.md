@@ -1,6 +1,6 @@
 # 🤖 Atendente de IA para WhatsApp Business (grátis)
 
-Uma atendente virtual que conversa como gente no seu WhatsApp Business, 24h por dia, usando a **API oficial da Meta** e **IAs gratuitas**.
+Uma atendente virtual que conversa como gente no seu WhatsApp Business, 24h por dia, usando a **API oficial da Meta**. O cérebro é o **Claude (Anthropic)**, com IAs gratuitas como reserva automática.
 
 ## O que ela faz
 
@@ -15,19 +15,21 @@ Uma atendente virtual que conversa como gente no seu WhatsApp Business, 24h por 
 | **Não inventa** | Quando não sabe, diz que vai confirmar e chama um humano. |
 | **Transferência para humano** | Se o cliente pede atendente, reclama ou quer fechar negócio, a IA pausa e manda um aviso no **seu** WhatsApp com o resumo e o link do cliente. |
 | **Controle pelo seu celular** | Você manda `#pausar 5511...` ou `#retomar 5511...` para assumir ou devolver a conversa. |
-| **Nunca fica fora do ar** | Se a IA grátis principal estourar o limite, troca sozinha para a próxima (Groq → Gemini → Ollama). |
+| **Cérebro Claude** | Usa o Claude como IA principal. A persona e a base de conhecimento ficam em cache, o que barateia as mensagens seguintes. |
+| **Nunca fica fora do ar** | Se o Claude falhar (sem crédito, fora do ar), troca sozinha para as IAs grátis (Claude → Groq → Gemini → Ollama). |
 | **Segurança** | Valida a assinatura da Meta em toda requisição do webhook. |
 
-Zero dependências: só precisa do **Node.js 20+**.
+Precisa só do **Node.js 20+**. A única dependência é o SDK oficial da Anthropic.
 
 ---
 
-## 💰 É grátis mesmo? (resposta honesta)
+## 💰 Quanto custa? (resposta honesta)
 
 | Parte | Custo |
 |---|---|
 | Este código | Grátis. |
-| IA (Groq / Gemini) | Grátis dentro dos limites diários, que dão para centenas de conversas por dia. O **Ollama** no seu computador é grátis e ilimitado. |
+| **Claude (cérebro principal)** | **Pago por uso**, com créditos pré-pagos em console.anthropic.com. A assinatura Claude Pro/Max **não** cobre a API. Estimativa com o modelo padrão (`claude-opus-5-5`, effort `low`): em torno de **US$ 0,01 a 0,03 por resposta**. Confira o gasto real no painel, porque varia com o tamanho da base de conhecimento e da conversa. Para gastar bem menos, use `CLAUDE_MODEL=claude-haiku-4-5` (mais simples e barato) ou `claude-sonnet-5-5` (meio-termo). Defina um limite de gasto mensal no console. |
+| Reservas (Groq / Gemini) | Grátis dentro dos limites diários. O **Ollama** no seu computador é grátis e ilimitado. Se quiser custo zero, tire `claude` de `LLM_PROVIDERS`. |
 | WhatsApp Cloud API (Meta) | **Responder clientes que mandaram mensagem é grátis** (dentro da janela de 24h após a última mensagem do cliente). Você **paga** só se quiser *iniciar* conversas com mensagens de marketing (modelos/templates). Um bot de atendimento não precisa disso. |
 | Servidor | Grátis com as opções abaixo. |
 
@@ -42,8 +44,12 @@ Zero dependências: só precisa do **Node.js 20+**.
 ### 1. Testar a IA no seu computador (5 minutos)
 
 ```bash
+npm install
 cp .env.example .env
-# Crie uma chave grátis em https://console.groq.com/keys e cole em GROQ_API_KEY
+# 1. Crie a chave do Claude em https://console.anthropic.com (Settings → API Keys),
+#    coloque créditos e cole em ANTHROPIC_API_KEY
+# 2. (Recomendado) Crie uma chave grátis em https://console.groq.com/keys e cole em GROQ_API_KEY.
+#    Ela serve de reserva e é usada para transcrever áudios.
 npm run chat
 ```
 
@@ -110,13 +116,14 @@ npm test
 src/server.js     webhook da Meta (recebe e valida mensagens)
 src/agent.js      cérebro: memória, prompt, transferência para humano, comandos
 src/humanizer.js  balões, tempo de digitação, horário comercial
-src/llm.js        IAs grátis com reserva automática + transcrição de áudio
+src/llm.js        Claude (principal) + IAs grátis de reserva + transcrição de áudio
 src/whatsapp.js   envio de mensagens, "digitando...", download de mídia
 src/memory.js     memória dos clientes (arquivo data/memory.json)
 src/cli.js        conversar com a IA pelo terminal
 ```
 
 ## Próximos passos possíveis
+- O Claude enxergar as fotos que o cliente manda (produto, comprovante, documento)
 - Agendamento automático no Google Agenda
 - Envio de catálogo, botões e listas interativas
 - Painel web para ver as conversas

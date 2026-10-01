@@ -27,8 +27,14 @@ export const config = {
     apiVersion: env('WHATSAPP_API_VERSION', 'v23.0'),
   },
   llm: {
-    order: env('LLM_PROVIDERS', 'groq,gemini').split(',').map((s) => s.trim()).filter(Boolean),
+    order: env('LLM_PROVIDERS', 'claude,groq,gemini').split(',').map((s) => s.trim()).filter(Boolean),
     providers: {
+      claude: {
+        apiKey: env('ANTHROPIC_API_KEY'),
+        model: env('CLAUDE_MODEL', 'claude-opus-5-5'),
+        // low = respostas rápidas e econômicas, ótimo para chat; suba para medium/high se quiser mais raciocínio
+        effort: env('CLAUDE_EFFORT', 'low'),
+      },
       groq: {
         baseUrl: 'https://api.groq.com/openai/v1',
         apiKey: env('GROQ_API_KEY'),

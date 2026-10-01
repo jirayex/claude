@@ -78,3 +78,36 @@ test('fluxo completo: junta mensagens, responde em balões e transfere para huma
   await agent.onMessage({ from: '5500000000000', text: '#retomar 5511' });
   assert.equal(getContact('5511').paused, false);
 });
+
+test('Claude: persona em cache, contexto no fim, fallback ligado e recusa vira erro', async () => {
+  const { config } = await import('../src/config.js');
+  const { chat } = await import('../src/llm.js');
+  config.llm.order = ['claude'];
+  config.llm.providers.claude.apiKey = 'sk-test';
+
+  const bodies = [];
+  let reply = { stop_reason: 'end_turn', content: [{ type: 'thinking', thinking: '' }, { type: 'text', text: 'Oi! || Tudo bem?' }] };
+  globalThis.fetch = async (url, opts) => {
+    bodies.push({ url: String(url), headers: new Headers(opts.headers), body: JSON.parse(opts.body) });
+    return new Response(JSON.stringify({ id: 'msg_1', type: 'message', role: 'assistant', model: 'claude-opus-5-5', usage: {}, ...reply }), {
+      headers: { 'content-type': 'application/json' },
+    });
+  };
+
+  const text = await chat({
+    system: 'PERSONA',
+    context: 'CTX',
+    history: [{ role: 'assistant', content: 'antiga' }, { role: 'user', content: 'oi' }],
+  });
+  assert.equal(text, 'Oi! || Tudo bem?');
+  const { url, headers, body } = bodies[0];
+  assert.match(url, /\/v1\/messages/);
+  assert.match(headers.get('anthropic-beta'), /server-side-fallback-2026-07-01/);
+  assert.equal(body.model, 'claude-opus-5-5');
+  assert.equal(body.fallbacks, 'default');
+  assert.deepEqual(body.system, [{ type: 'text', text: 'PERSONA', cache_control: { type: 'ephemeral' } }]);
+  assert.deepEqual(body.messages, [{ role: 'user', content: 'oi' }, { role: 'system', content: 'CTX' }]);
+
+  reply = { stop_reason: 'refusal', stop_details: { category: 'cyber' }, content: [] };
+  await assert.rejects(chat({ system: 'P', context: 'C', history: [{ role: 'user', content: 'x' }] }), /recusa/);
+});
