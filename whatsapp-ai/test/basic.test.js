@@ -83,6 +83,7 @@ test('Claude: persona em cache, contexto no fim, fallback ligado e recusa vira e
   const { config } = await import('../src/config.js');
   const { chat } = await import('../src/llm.js');
   config.llm.order = ['claude'];
+  config.llm.providers.claude.model = 'claude-opus-5-5';
   config.llm.providers.claude.apiKey = 'sk-test';
 
   const bodies = [];

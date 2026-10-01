@@ -27,11 +27,11 @@ export const config = {
     apiVersion: env('WHATSAPP_API_VERSION', 'v23.0'),
   },
   llm: {
-    order: env('LLM_PROVIDERS', 'claude,groq,gemini').split(',').map((s) => s.trim()).filter(Boolean),
+    order: env('LLM_PROVIDERS', 'gemini,groq').split(',').map((s) => s.trim()).filter(Boolean),
     providers: {
       claude: {
         apiKey: env('ANTHROPIC_API_KEY'),
-        model: env('CLAUDE_MODEL', 'claude-opus-5-5'),
+        model: env('CLAUDE_MODEL', 'claude-haiku-4-5'),
         // low = respostas rápidas e econômicas, ótimo para chat; suba para medium/high se quiser mais raciocínio
         effort: env('CLAUDE_EFFORT', 'low'),
       },
@@ -54,7 +54,7 @@ export const config = {
     transcribeAudio: env('TRANSCRIBE_AUDIO', 'true') === 'true',
   },
   bot: {
-    name: env('BOT_NAME', 'Sofia'),
+    name: env('BOT_NAME', 'Ana'),
     company: env('COMPANY_NAME', 'Minha Empresa'),
     ownerNumbers: env('OWNER_NUMBERS').split(',').map((s) => s.replace(/\D/g, '')).filter(Boolean),
     debounceMs: num('DEBOUNCE_SECONDS', 6) * 1000,

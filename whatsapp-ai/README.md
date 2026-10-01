@@ -1,6 +1,6 @@
 # 🤖 Atendente de IA para WhatsApp Business (grátis)
 
-Uma atendente virtual que conversa como gente no seu WhatsApp Business, 24h por dia, usando a **API oficial da Meta**. O cérebro é o **Claude (Anthropic)**, com IAs gratuitas como reserva automática.
+Uma atendente virtual que conversa como gente no seu WhatsApp Business, 24h por dia, usando a **API oficial da Meta**. Por padrão é **100% grátis**: Gemini como cérebro principal e Groq como reserva. O Claude (pago, pré-pago) é opcional.
 
 ## O que ela faz
 
@@ -15,8 +15,8 @@ Uma atendente virtual que conversa como gente no seu WhatsApp Business, 24h por 
 | **Não inventa** | Quando não sabe, diz que vai confirmar e chama um humano. |
 | **Transferência para humano** | Se o cliente pede atendente, reclama ou quer fechar negócio, a IA pausa e manda um aviso no **seu** WhatsApp com o resumo e o link do cliente. |
 | **Controle pelo seu celular** | Você manda `#pausar 5511...` ou `#retomar 5511...` para assumir ou devolver a conversa. |
-| **Cérebro Claude** | Usa o Claude como IA principal. A persona e a base de conhecimento ficam em cache, o que barateia as mensagens seguintes. |
-| **Nunca fica fora do ar** | Se o Claude falhar (sem crédito, fora do ar), troca sozinha para as IAs grátis (Claude → Groq → Gemini → Ollama). |
+| **Cérebro grátis** | Gemini como IA principal; se ela atingir o limite do dia, troca sozinha para a Groq (e o Ollama, se configurado). |
+| **Claude opcional** | Se quiser mais qualidade, ative o Claude em `LLM_PROVIDERS`. As IAs grátis viram reserva automática. |
 | **Segurança** | Valida a assinatura da Meta em toda requisição do webhook. |
 
 Precisa só do **Node.js 20+**. A única dependência é o SDK oficial da Anthropic.
@@ -28,8 +28,8 @@ Precisa só do **Node.js 20+**. A única dependência é o SDK oficial da Anthro
 | Parte | Custo |
 |---|---|
 | Este código | Grátis. |
-| **Claude (cérebro principal)** | **Pago por uso**, com créditos pré-pagos em console.anthropic.com. A assinatura Claude Pro/Max **não** cobre a API. Estimativa com o modelo padrão (`claude-opus-5-5`, effort `low`): em torno de **US$ 0,01 a 0,03 por resposta**. Confira o gasto real no painel, porque varia com o tamanho da base de conhecimento e da conversa. Para gastar bem menos, use `CLAUDE_MODEL=claude-haiku-4-5` (mais simples e barato) ou `claude-sonnet-5-5` (meio-termo). Defina um limite de gasto mensal no console. |
-| Reservas (Groq / Gemini) | Grátis dentro dos limites diários. O **Ollama** no seu computador é grátis e ilimitado. Se quiser custo zero, tire `claude` de `LLM_PROVIDERS`. |
+| **Claude (opcional, desligado por padrão)** | **Pago por uso**, com créditos pré-pagos em console.anthropic.com. A assinatura Claude Pro/Max **não** cobre a API. O exemplo usa `claude-haiku-4-5`, o mais barato. **Deixe o Auto-reload desligado** no Billing: assim você nunca paga mais do que o crédito que comprou. |
+| IA (Gemini / Groq) | Grátis dentro dos limites diários. O **Ollama** no seu computador é grátis e ilimitado. ⚠️ Nos planos grátis, o provedor pode usar as conversas para melhorar os produtos dele; avalie isso pela LGPD. |
 | WhatsApp Cloud API (Meta) | **Responder clientes que mandaram mensagem é grátis** (dentro da janela de 24h após a última mensagem do cliente). Você **paga** só se quiser *iniciar* conversas com mensagens de marketing (modelos/templates). Um bot de atendimento não precisa disso. |
 | Servidor | Grátis com as opções abaixo. |
 
@@ -46,10 +46,10 @@ Precisa só do **Node.js 20+**. A única dependência é o SDK oficial da Anthro
 ```bash
 npm install
 cp .env.example .env
-# 1. Crie a chave do Claude em https://console.anthropic.com (Settings → API Keys),
-#    coloque créditos e cole em ANTHROPIC_API_KEY
-# 2. (Recomendado) Crie uma chave grátis em https://console.groq.com/keys e cole em GROQ_API_KEY.
-#    Ela serve de reserva e é usada para transcrever áudios.
+# 1. Crie uma chave grátis da Gemini em https://aistudio.google.com/apikey → GEMINI_API_KEY
+# 2. Crie uma chave grátis da Groq em https://console.groq.com/keys → GROQ_API_KEY
+#    (reserva + transcrição de áudios)
+# (Opcional) Claude: chave em https://console.anthropic.com → ANTHROPIC_API_KEY
 npm run chat
 ```
 
@@ -116,7 +116,7 @@ npm test
 src/server.js     webhook da Meta (recebe e valida mensagens)
 src/agent.js      cérebro: memória, prompt, transferência para humano, comandos
 src/humanizer.js  balões, tempo de digitação, horário comercial
-src/llm.js        Claude (principal) + IAs grátis de reserva + transcrição de áudio
+src/llm.js        Gemini/Groq/Ollama (grátis) + Claude opcional + transcrição de áudio
 src/whatsapp.js   envio de mensagens, "digitando...", download de mídia
 src/memory.js     memória dos clientes (arquivo data/memory.json)
 src/cli.js        conversar com a IA pelo terminal
